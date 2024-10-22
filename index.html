@@ -467,11 +467,14 @@
 }
 function authenticateAndLoadAPIs() {
     if (!accessToken) {
-        tokenClient.requestAccessToken(); // This will get the OAuth access token
+        console.log("No access token found, requesting access token...");
+        tokenClient.requestAccessToken();  // This prompts the user to authenticate
     } else {
-        loadAPIs(); // Load the APIs once you have the token
+        console.log("Access token already exists, loading APIs...");
+        loadAPIs();  // Load the APIs once token is available
     }
 }
+
     // Function to authenticate the user and obtain an access token
     function authenticateAndSaveData() {
     if (!accessToken) {
