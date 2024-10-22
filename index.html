@@ -439,13 +439,16 @@
                 accessToken = response.access_token;
                 console.log("Access token obtained:", accessToken);
 
-                    // Now load the Google APIs
-                loadAPIs(() => {
+                 if (accessToken) {
+            gapi.client.setToken({ access_token: accessToken });
+            loadAPIs(() => {
                 console.log("APIs loaded successfully");
             });
-                },
-            });
+        } else {
+            console.error("Failed to obtain access token");
         }
+    },
+});
 
         gapi.client.setToken({ access_token: accessToken });
 
