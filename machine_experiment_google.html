@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Machine Experiment</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <style>
+        .App {
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .machines-container {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+
+        .machine-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .machine {
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid;
+            width: 350px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .blue-machine {
+            background-color: #cce5ff;
+            border-color: #004085;
+        }
+
+        .green-machine {
+            background-color: #d4edda;
+            border-color: #155724;
+        }
+
+        .purple-machine {
+            background-color: #f3e8ff;
+            border-color: #6f42c1;
+        }
+
+        /* Slots Container */
+        .machine .slots {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            height: auto;
+        }
+
+        /* Slot Styles */
+        .slot {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 10px;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+        }
+
+        /* Exaggerated Slot Sizes */
+        .slot.small {
+            width: 80px;
+            height: 60px;
+        }
+
+        .slot.medium {
+            width: 120px;
+            height: 90px;
+        }
+
+        .slot.large {
+            width: 160px;
+            height: 120px;
+        }
+
+        /* Button Styles */
+        .slot button {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 10px;
+            border: 2px solid grey;
+            font-size: 16px;
+            background-color: #f0f0f0;
+            cursor: not-allowed;
+            transition: all 0.3s ease;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Hover effect */
+        .slot.hover {
+            border-color: #ffeb3b;
+        }
+
+        .is-question-phase .slot button {
+            pointer-events: none; /* Keep slot buttons unclickable */
+        }
+
+        /* Ensure machines --> clickable */
+        .is-question-phase .machine {
+            pointer-events: auto;
+            cursor: pointer;
+        }
+
+        /* Machine-Specific Button Styles */
+        .blue-machine button {
+            background-color: rgba(26, 76, 168, 0.2);
+            border: 2px solid rgba(47, 96, 186, 0.8);
+            color: #003366;
+        }
+
+        .green-machine button {
+            background-color: rgba(26, 116, 26, 0.2);
+            border: 2px solid rgba(55, 145, 55, 0.8);
+            color: #006400;
+        }
+
+        .purple-machine button {
+            background-color: rgba(142, 31, 142, 0.2);
+            border: 2px solid rgba(156, 58, 156, 0.8);
+            color: #800080;
+        }
+
+        /* Outcomes Container */
+        .outcomes-container {
+            display: flex;
+            justify-content: space-between;
+            width: 85%;
+            position: relative;  
+            /*top: 180px;*/
+            margin-bottom: 200px; 
+        }
+
+        /* Skip Button Styling */
+        .skip-button {
+            position: fixed;
+            bottom: 20px;  
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            z-index: 9999; 
+        }
+
+        .skip-button:hover {
+            background-color: #e0e0e0;
+            border-color: #999;
+        }
+
+        .outcome {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .outcome span {
+            margin-top: 5px;
+            font-size: 30px;
+            color: #ffd700;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Star Styles */
+        .star {
+            display: inline-block;
+            margin: 0;
+            color: #ffeb3b;
+            font-size: 30px;
+        }
+
+        .star::before {
+            content: '★';
+        }
+
+        .star.small {
+            font-size: 20px;
+        }
+
+        .star.medium {
+            font-size: 40px;
+        }
+
+        .star.large {
+            font-size: 60px;
+        }
+
+        /* Remaining Stars */
+        .remaining-stars {
+            margin-top: 10px;
+            font-size: 18px;
+        }
+
+        /* Draggable Star */
+        .draggable-star {
+            display: inline-block;
+            margin: 5px;
+            cursor: move;
+        }
+
+
+        /* Outcomes displayed outside machine */
+        .machine-container + .outcomes-container {
+            margin-top: 10px;
+            display: flex;
+            justify-content: space-between;
+            width: 350px;
+        }
+
+        .button-container {
+        display: flex;
+        justify-content: center;
+        gap: 20px; /* Space between the buttons */
+        margin-top: 20px;
+    }
+
+    /* Styling for buttons */
+    .button-container button {
+        padding: 10px 20px;
+        font-size: 18px;
+        cursor: pointer;
+    }
+
+    .agree-button {
+        background-color: #e0e0e0;
+        border: 2px solid #999;
+        border-radius: 5px;
+    }
+
+    .decline-button {
+        background-color: #f0f0f0;
+        border: 2px solid #ccc;
+        border-radius: 5px;
+    }
+
+    /* Hover effect */
+    .agree-button:hover {
+        background-color: #d0d0d0;
+    }
+
+    .decline-button:hover {
+        background-color: #e0e0e0;
+    }
+    </style>
+</head>
+<body>
+
+     <!-- Authentication Button -->
+    <!-- Consent Section -->
+    <div id="consent-section">
+        <div id="consent-form" style="max-width: 800px; margin: 0 auto; text-align: center;">
+            <h1>Adult Consent Form</h1>
+            <h2>Causal Learning in Children</h2>
+            <h2>CPHS # 2010-01-631</h2>
+            <h3 style="text-align: right;">Adult mTurk Prolific</h3>
+            
+            <h2>Key information</h2>
+            <ul style="text-align: left;">
+                <li>You are being invited to participate in a research study. Participation in research is completely voluntary.</li>
+                <li>The purpose of the study is to examine how adults infer and interpret cause and effect and how adults understand the thoughts and feelings of other people.</li>
+                <li>The study will take a total of 1-4 testing sessions (but usually it is just one session) that will last no longer than 30 minutes each and you will be asked to play interactive games designed for both kids and adults. Sometimes you may receive payment incentives based on your choices, responses, or decisions. You may be asked to watch a short video clip, look at pictures, or listen to music, and you may be asked to answer questions about how the clip or music made you feel.</li>
+                <li>Risks and/or discomforts may include the risk of breach of confidentiality.</li>
+                <li>There is no direct benefit to you. The results from the study may contribute to improving our understanding of the way people make judgments about cause and effect.
+                </li>
+            </ul>
+    
+            <h2>Purpose of the Study</h2>
+            <p style="text-align: left;">
+                Dear Participant,<br>
+                This study is being conducted by Alison Gopnik, professor of psychology at the University of California, Berkeley, and her laboratory of research assistants, graduate students, and postdoctoral fellows. We invite you to participate in a study of how adults infer and interpret cause and effect and how adults understand the thoughts and feelings of other people. Please read the following information carefully and select the button below indicating whether you wish to participate in the study. Participation is entirely voluntary. If anything is not clear, please do not hesitate to ask questions.
+            </p>
+    
+            <h2>Study Procedures</h2>
+            <p style="text-align: left;">
+                There can be up to 4 testing sessions (but usually it is just one session) that will last no longer than 30 minutes each. This study is designed to test hypotheses about the way people make judgments about cause and effect in a variety of contexts and about other peoples’ minds and behavior.<br><br>
+
+                You may be asked to do one or more of the following tasks 1) causal learning tasks (e.g., figuring out what causes what), 2) linguistic tasks (e.g., word associations and learning), 3) imagination tasks (e.g., reasoning about events counter to fact), 4) categorization/ association tasks (e.g., grouping objects or stating what comes to mind given a prompt), 5) general cognitive tasks (e.g., impulse control and searching for hidden objects). You may be asked to make judgments about what you see, answer questions about your judgments (such as making predictions and providing explanations), observe events, and perform actions yourself (such as grouping objects or making machines activate). Sometimes you might watch a short video clip, look at pictures, or listen to music, and you may be asked to answer questions about how the clip or music made you feel.<br><br>
+
+                You may refrain from answering any questions that make you uncomfortable and may withdraw your participation at any time even after completing the experiment without penalty.<br><br>
+
+                This study contains a number of checks to make sure that participants are finishing the tasks honestly and completely. As long as you read the instructions and complete the tasks, your submission will be approved. If you fail these checks, your submission will be rejected and you will not be compensated for responses entered.<br><br>
+
+                Study time: Your study participation will take a total of 1-4 testing sessions (but usually it is just one session) that will last no longer than 30 minutes each.<br><br>
+
+                Study location: All study procedures will take place online.
+            </p>
+    
+            <h2>Benefits</h2>
+            <p style="text-align: left;">
+                While there is no direct benefit to you, you may enjoy the novelty of our interactive displays. You will also be making a substantial contribution to improving our understanding of the way people make judgments about cause and effect.
+            </p>
+    
+            <h2>Risks/Discomforts</h2>
+            <p style="text-align: left;">
+                We do not expect you to face any foreseeable risks from your participation. There is the unlikely possibility that your confidentiality will be compromised; however, we have taken measures to minimize this risk.
+            </p>
+    
+            <h2>Confidentiality</h2>
+            <p style="text-align: left;">
+                Your identity will be separated from your data and a random numerical code will be assigned to keep track of the data. Your confidentiality will be kept to the degree permitted by the technology being used. No guarantees can be made regarding the interception of data sent via the Internet by any third parties. Data will be kept indefinitely. All information will be securely stored at the University in encrypted format. Physical data and information collected during the research will be encrypted and securely stored electronically both online and on an external hard drive as a back up. The external hard drive will be securely stored at the University in locked file cabinets, and housed in secure rooms. Only laboratory personnel will have access to this data. No individuals will be identified in any presentation or publication. Identifiers might be removed from the identifiable private information. After such removal, the information could be used for future research studies or distributed to other investigators for future research studies without additional informed consent from the subject or the legally authorized representative.<br><br>
+
+                Your personal information may be released if required by law. Authorized representatives from the following organizations may review your research data for purposes such as monitoring or managing the conduct of this study:
+                <li>Sponsors: National Science Foundation, Mind Science Foundation, Princeton University, Defense Advanced Research Projects Agency (DARPA)</li>
+                <li>University of California</li>
+            </p>
+    
+            <h2>Costs of Study Participation</h2>
+            <p style="text-align: left;">
+                There are no costs associated with study participation.
+            </p>
+
+            <h2>Compensation</h2>
+            <p style="text-align: left;">
+                For your participation in our research, you will receive a maximum rate of $8 per hour. Payment ranges from $0.54 to $0.67 for a 5-minute task and from $3.25 to $4.00 for a 30-minute task, depending on the time it takes to complete the type of task you’ve been assigned. For studies on Prolific, you will receive a minimum rate of $6.50 per hour. For experiments with a differential bonus payment system you may have the opportunity to earn “points” that are worth up to 5 cents each, with a total bonus of no more than 30 cents paid on top of the flat fee paid for the task completion. Your online account will be credited directly.
+            </p>
+    
+            <h2>Rights</h2>
+            <p style="text-align: left;">
+                Please understand that your participation in the research is voluntary and that you are free to withdraw your consent and discontinue participation in the research at any time. If you decide not to participate, there will be no penalty or loss of benefits to which you are otherwise entitled.
+            </p>
+    
+            <h2>Questions</h2>
+            <p style="text-align: left;">
+                If you have any questions at this point, please contact the lab at 643-2172 or Professor Alison Gopnik (642-2752), or email us at one of the addresses listed at the end of this form, if you have any questions or concerns later.<br><br>
+
+                If you have any question regarding your treatment or rights as a participant in this research project, please contact the Committee for the Protection of Human Subjects at the University of California at Berkeley at phone: (510) 642-7461, or at subjects@berkeley.edu.<br><br>
+
+                Thank you for your time. <br><br>
+                Sincerely, <br>
+
+                Alison Gopnik <br>
+
+                Professor<br>
+
+                Psychology Department<br>
+
+                University of California, Berkeley<br>
+
+                Additional Contact Information:<br>
+
+                Alison Gopnik, Principal Investigator: gopnik@berkeley.edu<br>
+
+                Laboratory Manager: gopniklabmanager@berkeley.edu<br>
+            </p>
+    
+            <h2>Consent</h2>
+            <p style="text-align: left;">
+                Adult Consent MTurkProlific_092823<br><br>
+
+                By clicking "I Agree to Participate" below, you acknowledge that you are 18 or older, have read this consent form, and agree to take part in the research. If you do not agree, please click the decline button below.
+            </p>
+    
+            <div style="display: flex; justify-content: center; gap: 20px;">
+                <button id="decline-button" style="padding: 10px 20px;">I Decline</button>
+                <button id="consent-button" style="padding: 10px 20px;">I Agree to Participate</button>
+            </div>
+        </div>
+    </div>
+    
+
+    <!-- Prolific ID, Age, and Biological Sex Section -->
+    <div id="participant-info-section" style="display: none;">
+        <div style="text-align: center;">
+            <h2>Participant Information</h2>
+        </div>
+        <div style="width: 80%; margin: auto;">
+            <p><strong>What is your Prolific ID?</strong></p>
+            <input type="text" id="prolific-id" placeholder="Enter Prolific ID" style="width: 100%; padding: 10px; font-size: 18px;" required>
+            <br><br>
+            <p><strong>What is your age?</strong></p>
+            <input type="number" id="age" placeholder="Enter number in years" style="width: 100%; padding: 10px; font-size: 18px;" required>
+            <br><br>
+            <p><strong>What is your biological sex?</strong></p>
+            <input type="text" id="sex" placeholder="Enter F or M" style="width: 100%; padding: 10px; font-size: 18px;" required>
+            <br><br>
+            <button id="submit-info-button" style="width: 100%; padding: 15px; font-size: 18px; cursor: pointer;">Submit and Start Experiment</button>
+        </div>
+    </div>
+
+    <div id="experiment-section" style="display: none;">
+        <div class="App">
+            <br>
+            <div class="remaining-stars" id="instruction-text">You are an elf in a star factory. The star factory has 3 size-changing machines. Each machine has 3 slots that may make the stars bigger or smaller.</div>
+            <div class="remaining-stars" id="playing-text">You can play with these machines however you want, by putting stars into any slot from any machine. You are given 30 stars.</div>
+            <div class="remaining-stars" id="finish-text">You can also finish playing earlier by hitting the "Finish Playing" button.</div>
+            <br>
+            <div class="remaining-stars" id="drag-instruction">Drag a star to a slot. Stars left: <span id="remainingStars">30</span></div>
+            <div class="draggable-star" draggable="true" id="star">
+                <span class="star medium"></span>
+            </div>
+            <br>
+            <button class="skip-button" onclick="startQuestions()">Finish Playing</button>
+            <div class="machines-container" id="machines-container"></div>
+        </div>
+    </div>
+
+    <script>
+
+        let tokenClient;
+        let accessToken = null;
+
+        // Initialize the GIS library
+        function initializeGSI() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: "565451641944-rj2hnbio7v5r3p6fio2o3cq25kecbo2e.apps.googleusercontent.com", // Replace with your actual Client ID
+                scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets",
+                callback: (response) => {
+                    if (response.error) {
+                        console.error("Authentication Error: ", response);
+                        return;
+                    }
+                console.log("Authentication response:", response); 
+                accessToken = response.access_token;
+                console.log("Access token obtained:", accessToken);
+
+                // Now load the Google APIs
+                loadAPIs(() => {
+                saveDataToGoogleSheets();
+                console.log("APIs loaded successfully");
+            });
+                },
+            });
+        }
+
+        // gapi.client.setToken({ access_token: accessToken });
+
+
+function authenticateAndLoadAPIs() {
+    if (!accessToken) {
+        console.log("No access token found, requesting access token...");
+        tokenClient.requestAccessToken();  // This prompts the user to authenticate
+    } else {
+        console.log("Access token already exists, loading APIs...");
+        loadAPIs();  // Load the APIs once token is available
+    }
+}
+
+    // Function to authenticate the user and obtain an access token
+    function authenticateAndSaveData() {
+    if (!accessToken) {
+        console.log("Requesting access token...");
+        tokenClient.requestAccessToken();  // This should prompt the user to authenticate
+    } else {
+        console.log("Access token already available.");
+        loadAPIs(() => {
+            saveDataToGoogleSheets();  // Proceed to save data once authenticated
+        });
+    }
+}
+
+function loadAPIs(callback) {
+    gapi.load('client', () => {
+        gapi.client.init({
+            apiKey: "AIzaSyA_UTBMRp7Sz0fW3sJpL6W10Y-iHGbv_tY", // optional if you have an API key
+            discoveryDocs: [
+                "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest",
+                "https://www.googleapis.com/discovery/v1/apis/sheets/v4/rest"
+            ]
+        }).then(() => {
+            console.log("Google API Client Loaded");
+
+            if (accessToken) {
+                gapi.client.setToken({ access_token: accessToken });
+                console.log("Token set successfully.");
+            } else {
+                console.error("No access token available.");
+            }
+
+            if (callback) callback();
+        }).catch((error) => {
+            console.error("Error loading GAPI client:", error);
+        });
+    });
+}
+
+        let remainingStars = 30;
+        let consentGiven = false;
+        let prolificIdEntered = false;
+
+        document.getElementById('consent-button').addEventListener('click', function() {
+            document.getElementById('consent-section').style.display = 'none';
+            document.getElementById('participant-info-section').style.display = 'block';
+        });
+
+        document.getElementById('decline-button').addEventListener('click', function() {
+            document.getElementById('consent-section').innerHTML = `
+                <div style="text-align: center; padding: 50px;">
+                    <h2>Thank you for your time.</h2>
+                    <p>You have declined to participate in the study.</p>
+                </div>
+            `;
+        });
+
+        document.getElementById('submit-info-button').addEventListener('click', function() {
+            // Collect the participant's information
+            prolificId = document.getElementById('prolific-id').value.trim();
+            age = document.getElementById('age').value.trim();
+            sex = document.getElementById('sex').value.trim().toUpperCase();
+
+            if (prolificId === '' || age === '' || (sex !== 'F' && sex !== 'M')) {
+                alert("Please fill out all fields correctly to proceed.");
+            } else {
+                document.getElementById('participant-info-section').style.display = 'none';
+                document.getElementById('experiment-section').style.display = 'block';
+
+                // Proceed with the experiment
+                startExperiment(prolificId, age, sex);
+            }
+        });
+
+        function startExperiment(prolificId, age, sex) {
+            console.log("Experiment started. Prolific ID: " + prolificId + ", Age: " + age + ", Sex: " + sex);
+
+            // Reset remaining stars
+            remainingStars = 30;
+            document.getElementById("remainingStars").innerText = remainingStars;
+
+            // Reset any previous game state
+            const starElement = document.getElementById("star");
+            starElement.style.display = "block";
+            starElement.innerHTML = '<span class="star medium"></span>';
+
+            // Clear interaction logs or any other data tracking variables
+            interactionLogs = [];
+            reactionTimes = [];
+            lastClickTime = Date.now();
+        }
+
+        let prolificId = '';
+        let age = '';
+        let sex = '';
+
+        let questionIndex = 0;
+        let isQuestionPhase = false;
+        const machines = ['Exploiter', 'Empowerment', 'Entropy'];
+        const machineColors = ['blue-machine', 'green-machine', 'purple-machine'];
+        const entropyFirstRound = { Entropy: [true, true, true] };
+        let interactionLogs = [];
+        let reactionTimes = [];
+        let lastClickTime = Date.now();
+        const questions = [
+            "You are now an elf in a hat factory. The elf boss wants you to make as many big hats as you can. Which machine do you want to keep?",
+            "Now the elf boss wants you to make different hats, sometimes only big hats and sometimes only small hats. Which machine do you want to keep?",
+            "You can now play with a machine more. Which machine do you want to keep?"
+        ];
+
+        const possibleOrders = [
+            [1, 3, 2],
+            [2, 1, 3],
+            [2, 3, 1],
+            [3, 1, 2]
+        ];
+
+        let machineLayout = ''; // Order of machines
+        let slotLayout = ''; // Layout of slot sizes from left to right (e.g., S, M, L)
+
+        // Utility function to shuffle an array
+        function shuffleArray(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        // Shuffle machines and colors
+        const shuffledMachines = shuffleArray([...machines]);
+        const shuffledColors = shuffleArray([...machineColors]);
+        const randomButtonOrder = possibleOrders[Math.floor(Math.random() * possibleOrders.length)];
+
+        const machineContainer = document.getElementById('machines-container');
+        const slotSizeMap = {};  // Map slot index to size for the machine (small, medium, large)
+
+        // Render Machines
+        shuffledMachines.forEach((machine, index) => {
+            machineLayout += (index > 0 ? ',' : '') + machine; 
+            const machineDiv = document.createElement('div');
+            machineDiv.className = `machine-container`;
+            slotSizeMap[machine] = {
+                0: getSlotClass(randomButtonOrder[0]),
+                1: getSlotClass(randomButtonOrder[1]),
+                2: getSlotClass(randomButtonOrder[2]),
+            };
+
+            if (index === 0) {
+                slotLayout = randomButtonOrder.map(order => getSlotClass(order)[0].toUpperCase()).join(''); // Example: "MLS"
+            }
+            machineDiv.innerHTML = `
+                <div class="machine ${shuffledColors[index]}" data-machine="${machine}">
+                    <div class="slots">
+                        <div class="slot ${getSlotClass(randomButtonOrder[0])}" ondrop="drop(event, '${machine}', 0)" ondragover="allowDrop(event)">
+                            <button></button>
+                        </div>
+                        <div class="slot ${getSlotClass(randomButtonOrder[1])}" ondrop="drop(event, '${machine}', 1)" ondragover="allowDrop(event)">
+                            <button></button>
+                        </div>
+                        <div class="slot ${getSlotClass(randomButtonOrder[2])}" ondrop="drop(event, '${machine}', 2)" ondragover="allowDrop(event)">
+                            <button></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="outcomes-container">
+                    <div class="outcome" id="outcome-slot-0-${machine}"></div>
+                    <div class="outcome" id="outcome-slot-1-${machine}"></div>
+                    <div class="outcome" id="outcome-slot-2-${machine}"></div>
+                </div>
+            `;
+            machineContainer.appendChild(machineDiv);
+        });
+
+        // Get slot size class based on button order
+        function getSlotClass(order) {
+            switch(order) {
+                case 1:
+                    return 'small';
+                case 2:
+                    return 'medium';
+                case 3:
+                    return 'large';
+                default:
+                    return 'medium';
+            }
+        }
+
+        // Allow slot to accept drops
+        function allowDrop(event) {
+            if (!isQuestionPhase) {
+                event.preventDefault();
+            }
+        }
+
+        // Handle the drop event and logic for generating stars
+        function drop(event, machine, slotIndex) {
+            event.preventDefault();
+            let star = document.getElementById("star");
+
+            remainingStars--;
+            document.getElementById("remainingStars").innerText = remainingStars;
+
+            let size = '';
+            switch (machine) {
+                case 'Exploiter':
+                    size = 'large';
+                    break;
+                case 'Empowerment':
+                    size = slotSizeMap[machine][slotIndex];
+                    break;
+                case 'Entropy':
+                    if (entropyFirstRound.Entropy[slotIndex]) {
+                        size = getRandomSizeNotMatchingSlot(slotSizeMap[machine][slotIndex]);
+                        entropyFirstRound.Entropy[slotIndex] = false;
+                    } else {
+                        size = getRandomSize();
+                    }
+                    break;
+            }
+
+            const outcomeDiv = document.getElementById(`outcome-slot-${slotIndex}-${machine}`);
+            const starElement = document.createElement('span');
+            starElement.className = `star ${size}`;
+            outcomeDiv.appendChild(starElement);
+
+            logInteraction(machine, slotSizeMap[machine][slotIndex], size);
+            logReactionTime();
+
+            setTimeout(() => {
+                star.innerHTML = '';
+                if (remainingStars > 0) {
+                    const newStar = document.createElement('span');
+                    newStar.className = 'star medium';
+                    star.appendChild(newStar);
+                }
+            }, 500);
+
+            if (remainingStars === 0) {
+                star.style.display = "none";
+                startQuestions();
+            }
+        }
+
+        // Helper to get a random star size
+        function getRandomSize() {
+            const sizes = ['small', 'medium', 'large'];
+            return sizes[Math.floor(Math.random() * sizes.length)];
+        }
+
+        // Helper to get a size that doesn't match the slot size
+        function getRandomSizeNotMatchingSlot(slotSize) {
+            const sizes = ['small', 'medium', 'large'];
+            sizes.splice(sizes.indexOf(slotSize), 1);
+            return sizes[Math.floor(Math.random() * sizes.length)];
+        }
+
+        // Handle machine selection during question phase
+        function handleMachineClick(machine) {
+            let currentTime = Date.now();
+            let reactionTime = currentTime - lastClickTime;
+            lastClickTime = currentTime;
+
+            logMachineChoice(machine, reactionTime);
+            questionIndex++;
+
+
+            if (questionIndex < questions.length) {
+                // Update to the next question
+                document.getElementById("instruction-text").innerText = questions[questionIndex];
+            } else {
+                document.body.innerHTML = '<div class="App"><h1>Thank you for participating!</h1>';
+                saveDataToGoogleSheets();
+            }
+        }
+
+        // Start question phase
+        function startQuestions() {
+            isQuestionPhase = true;
+            lastClickTime = Date.now();
+
+            document.querySelector(".remaining-stars").innerText = "Click a machine to answer";
+            document.querySelector(".machines-container").classList.add("is-question-phase");
+            document.querySelector(".draggable-star").style.display = "none";
+            document.querySelector(".skip-button").style.display = "none"; 
+
+            document.getElementById("instruction-text").innerText = questions[questionIndex];
+            document.getElementById("drag-instruction").innerText = "Click a machine to answer.";
+            document.getElementById("playing-text").style.display = "none";
+            document.getElementById("finish-text").style.display = "none";
+
+            document.querySelectorAll('.machine').forEach(machine => {
+                console.log("Attaching click listener to:", machine.getAttribute('data-machine')); // Log this
+                machine.onclick = () => {
+                    handleMachineClick(machine.getAttribute('data-machine'));
+                };
+            });
+        }
+
+        function logInteraction(machine, slotSize, starSize) {
+            let currentTime = Date.now();
+            let reactionTime = currentTime - lastClickTime;
+            lastClickTime = currentTime;
+
+            interactionLogs.push({
+                prolificId: prolificId,
+                age: age,
+                sex: sex,
+                machineOrder: machineLayout.split(',').join(', '),
+                slotLayout: slotLayout,
+                colorOrder: shuffledColors.map(color => capitalize(color.split('-')[0])).join(', '),
+                trial: interactionLogs.length + 1,
+                machine: machine,
+                slotSize: slotSize[0].toUpperCase(),  // First letter of slot size
+                starSize: starSize[0].toUpperCase(),  // First letter of star size
+                question: '',
+                chosenMachine: '',
+                reactionTime: reactionTime
+            });
+        }
+
+        function capitalize(s) {
+            if (typeof s !== 'string') return '';
+            return s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        function logMachineChoice(machine, reactionTime) {
+            let currentQuestion = questionIndex < questions.length ? questions[questionIndex] : "No more questions";
+            interactionLogs.push({
+                prolificId: prolificId,
+                age: age,
+                sex: sex,
+                machineOrder: machineLayout.split(',').join(', '),
+                slotLayout: slotLayout,
+                colorOrder: shuffledColors.map(color => capitalize(color.split('-')[0])).join(', '),
+                trial: '',
+                machine: '',
+                slotSize: '',
+                starSize: '',
+                question: currentQuestion,
+                chosenMachine: machine,
+                reactionTime: reactionTime,
+            });
+            console.log("LOGGED")
+        }
+
+        function logReactionTime() {
+            let currentTime = Date.now();
+            let reactionTime = currentTime - lastClickTime;
+            lastClickTime = currentTime;
+            reactionTimes.push(reactionTime);
+        }
+
+        // function downloadCSV() {
+        //     let csvContent = "Prolific ID,Age,Sex,Machine Order (L->R),Slot Layout Order (L->R),Color Order (L->R),Trial,Machine,Slot Size,Star Size,Question,Chosen Machine,Reaction Time (ms)\n";
+
+        //     interactionLogs.forEach(log => {
+        //         csvContent += `"${log.prolificId}","${log.age}","${log.sex}","${log.machineOrder}","${log.slotLayout}","${log.colorOrder}",${log.trial},"${log.machine}","${log.slotSize}","${log.starSize}","${log.question}","${log.chosenMachine}","${log.reactionTime}"\n`;
+        //     });
+
+        //     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        //     const link = document.createElement("a");
+        //     if (link.download !== undefined) {
+        //         const url = URL.createObjectURL(blob);
+        //         link.setAttribute("href", url);
+        //         link.setAttribute("download", `experiment_results_${prolificId}.csv`);
+        //         link.style.visibility = 'hidden';
+        //         document.body.appendChild(link);
+        //         link.click();
+        //         document.body.removeChild(link);
+        //     }
+        // }
+    
+  // Function to save data to Google Sheets and move to Google Drive folder
+  function saveDataToGoogleSheets() {
+    if (!gapi.client || !gapi.client.sheets) {
+        console.error("Google Sheets API is not loaded yet");  // Logs if the Sheets API is not available
+        return;
+    }
+    
+    // Step 1: Create a new Google Sheet for the participant
+    const createSheetRequest = {
+        properties: {
+            title: `${prolificId}` // Set the sheet title as the participant's Prolific ID
+        }
+    };
+
+    console.log("Attempting to create a new sheet with token:", accessToken);
+
+    // Create a new spreadsheet using the Google Sheets API
+    gapi.client.sheets.spreadsheets.create({
+        resource: createSheetRequest
+    }).then((response) => {
+        const newSheetId = response.result.spreadsheetId;
+        console.log("New Sheet ID created:", newSheetId);
+
+        // Prepare the data to be written to the new sheet
+        let sheetData = [
+            ["Prolific ID", "Age", "Sex", "Machine Order (L->R)", "Slot Layout Order (L->R)", "Color Order (L->R)", "Trial", "Machine", "Slot Size", "Star Size", "Question", "Chosen Machine", "Reaction Time (ms)"]
+        ];
+
+        interactionLogs.forEach(log => {
+            sheetData.push([
+                log.prolificId,
+                log.age,
+                log.sex,
+                log.machineOrder,
+                log.slotLayout,
+                log.colorOrder,
+                log.trial,
+                log.machine,
+                log.slotSize,
+                log.starSize,
+                log.question,
+                log.chosenMachine,
+                log.reactionTime
+            ]);
+        });
+
+        // Step 2: Write data to the newly created sheet using the append method
+        const valueRangeBody = {
+            "majorDimension": "ROWS",
+            "values": sheetData
+        };
+
+        gapi.client.sheets.spreadsheets.values.append({
+            spreadsheetId: newSheetId,
+            range: 'Sheet1!A1',
+            valueInputOption: 'RAW',
+            resource: valueRangeBody
+        }).then(() => {
+            console.log("Data successfully written to sheet.");
+
+            // Step 3: Move the newly created sheet to the specified Google Drive folder
+            const folderId = "16O3PCn4N3819acmzbCv61KwdJowiMRs9"; // Replace with your folder ID
+            gapi.client.request({
+                path: `https://www.googleapis.com/drive/v3/files/${newSheetId}`,
+                method: 'PATCH',
+                body: {
+                    parents: [folderId]
+                }
+            }).then(() => {
+                console.log("Sheet successfully moved to folder.");
+            }).catch((err) => {
+                console.error("Error moving sheet to folder:", err);
+            });
+        }).catch((err) => {
+            console.error("Error writing data to sheet:", err);
+        });
+    }).catch((err) => {
+        console.error("Error creating new sheet:", err);
+    });
+}
+
+// Add this in the window.onload or initialize function
+window.onload = () => {
+    initializeGSI();  // Initialize Google Identity Services (GIS) for OAuth
+};
+
+    </script>
+</body>
+</html>
