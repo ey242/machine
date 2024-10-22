@@ -430,7 +430,7 @@
         function initializeGSI() {
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: "565451641944-rj2hnbio7v5r3p6fio2o3cq25kecbo2e.apps.googleusercontent.com", // Replace with your actual Client ID
-                scope: "https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/spreadsheets",
+                scope: "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets",
                 callback: (response) => {
                     if (response.error) {
                         console.error("Authentication Error: ", response);
